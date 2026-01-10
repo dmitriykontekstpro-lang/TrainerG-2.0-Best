@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { WorkoutTemplate, DailyNutritionSummary, UserProfile } from '../../types';
+import { calculateNutrition } from '../../utils/calculations';
 import { LobbyCard } from './LobbyCard';
 
 interface LobbyProps {
@@ -38,6 +39,24 @@ export const Lobby: React.FC<LobbyProps> = ({
         'ИЮЛЬ', 'АВГУСТ', 'СЕНТЯБРЬ', 'ОКТЯБРЬ', 'НОЯБРЬ', 'ДЕКАБРЬ'];
     const currentMonth = monthNames[now.getMonth()];
     const dayOfMonth = now.getDate();
+
+    // Nutrition Data
+    const plan = userProfile ? calculateNutrition(userProfile) : null;
+    const targetCalories = plan?.targetCalories || 2000;
+    const currentCalories = Math.round(dailySummary?.totalCalories || 0);
+
+    // Macro Progress %
+    const pTarget = plan?.protein || 1;
+    const fTarget = plan?.fats || 1;
+    const cTarget = plan?.carbs || 1;
+
+    const pCurrent = dailySummary?.totalProtein || 0;
+    const fCurrent = dailySummary?.totalFats || 0;
+    const cCurrent = dailySummary?.totalCarbs || 0;
+
+    const pPerc = Math.round((pCurrent / pTarget) * 100);
+    const fPerc = Math.round((fCurrent / fTarget) * 100);
+    const cPerc = Math.round((cCurrent / cTarget) * 100);
 
     // Goal Translation
     const getGoalLabel = (goal?: string) => {
@@ -108,17 +127,31 @@ export const Lobby: React.FC<LobbyProps> = ({
                     actionLabel="ОТКРЫТЬ"
                 >
                     <View>
-                        <View className="flex-row items-baseline gap-1">
-                            <Text className="text-white font-bold text-3xl">
-                                {Math.round(dailySummary?.totalCalories || 0)}
+                        <View className="flex-row items-baseline gap-1 mb-4">
+                            <Text className="text-white font-bold text-2xl">
+                                {targetCalories}<Text className="text-gray-500">/</Text>{currentCalories}
                             </Text>
-                            <Text className="text-gray-500 text-xs font-bold">ККАЛ</Text>
+                        </View>
+
+                        <View className="flex-row justify-between">
+                            <View className="items-center">
+                                <Text className="text-flow-green font-bold text-sm">{pPerc}%</Text>
+                                <Text className="text-gray-500 text-[10px] font-bold">БЕЛКИ</Text>
+                            </View>
+                            <View className="items-center">
+                                <Text className="text-flow-green font-bold text-sm">{fPerc}%</Text>
+                                <Text className="text-gray-500 text-[10px] font-bold">ЖИРЫ</Text>
+                            </View>
+                            <View className="items-center">
+                                <Text className="text-flow-green font-bold text-sm">{cPerc}%</Text>
+                                <Text className="text-gray-500 text-[10px] font-bold">УГЛЕВ</Text>
+                            </View>
                         </View>
 
                         {/* Progress Bar */}
-                        <View className="h-1 bg-gray-800 rounded-full mt-2 overflow-hidden w-full">
+                        <View className="h-1 bg-gray-800 rounded-full mt-4 overflow-hidden w-full">
                             <View
-                                style={{ width: `${Math.min((dailySummary?.caloriesProgress || 0) * 100, 100)}%` }}
+                                style={{ width: `${Math.min((currentCalories / targetCalories) * 100, 100)}%` }}
                                 className="h-full bg-flow-green"
                             />
                         </View>

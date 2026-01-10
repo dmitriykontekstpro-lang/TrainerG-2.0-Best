@@ -27,7 +27,7 @@ export const LobbyCard: React.FC<LobbyCardProps> = ({
             onPress={onPress}
             disabled={disabled || loading}
             className={`w-[48%] bg-gray-900 rounded-2xl p-4 border border-gray-800 mb-4 justify-between ${disabled ? 'opacity-50' : ''} ${className}`}
-            style={{ minHeight: 160 }}
+            style={{ minHeight: 210 }}
         >
             {/* Header */}
             <View className="flex-row justify-between items-start mb-2">
