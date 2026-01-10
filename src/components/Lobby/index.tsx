@@ -47,6 +47,8 @@ export const Lobby: React.FC<LobbyProps> = ({
             case 'RECOMPOSITION': return 'РЕКОМПОЗИЦИЯ';
             case 'STRENGTH': return 'СИЛА';
             case 'ENDURANCE': return 'ВЫНОСЛИВОСТЬ';
+            case 'MAINTENANCE': return 'ПОДДЕРЖАНИЕ';
+            case 'CUTTING': return 'СУШКА';
             default: return 'НЕТ ЦЕЛИ';
         }
     };

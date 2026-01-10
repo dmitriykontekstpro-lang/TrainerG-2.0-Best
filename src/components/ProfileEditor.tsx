@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
-import { UserProfile, Gender, MainGoal, ExperienceLevel, TrainingLocation, ActivityLevel, SleepDuration } from '../types';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { UserProfile, Gender, MainGoal, ExperienceLevel, TrainingLocation, ActivityLevel, SleepDuration, NutritionPlan } from '../types';
+import { calculateNutrition } from '../utils/calculations';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface ProfileEditorProps {
     profile: UserProfile | null;
@@ -27,6 +32,18 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile: initialPr
         sleepDuration: '7_8'
     });
 
+    const [isGoalOpen, setIsGoalOpen] = useState(false);
+    const [projectedNutrition, setProjectedNutrition] = useState<NutritionPlan | null>(null);
+
+    // Calc on change
+    useEffect(() => {
+        // Only calc if we have basic bio
+        if (profile.weight && profile.height && profile.age && profile.gender && profile.activityLevel && profile.mainGoal) {
+            const res = calculateNutrition(profile as UserProfile);
+            setProjectedNutrition(res);
+        }
+    }, [profile.weight, profile.height, profile.age, profile.gender, profile.activityLevel, profile.mainGoal]);
+
     const update = (key: keyof UserProfile, val: any) => {
         setProfile(p => ({ ...p, [key]: val }));
     };
@@ -51,9 +68,43 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile: initialPr
         <Text className="text-gray-500 font-mono text-xs uppercase mt-6 mb-2">{title}</Text>
     );
 
+    const getGoalLabel = (g?: string) => {
+        switch (g) {
+            case 'WEIGHT_LOSS': return 'ПОХУДЕНИЕ';
+            case 'MUSCLE_GAIN': return 'НАБОР МАССЫ';
+            case 'RECOMPOSITION': return 'РЕКОМПОЗИЦИЯ';
+            case 'STRENGTH': return 'СИЛА';
+            case 'ENDURANCE': return 'ВЫНОСЛИВОСТЬ';
+            case 'MAINTENANCE': return 'ПОДДЕРЖАНИЕ';
+            case 'CUTTING': return 'СУШКА';
+            default: return 'ВЫБРАТЬ';
+        }
+    };
+
+    const toggleGoalDropdown = () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setIsGoalOpen(!isGoalOpen);
+    };
+
     return (
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
             <Text className="text-2xl font-bold text-white mb-6 uppercase">Профиль Атлета</Text>
+
+            {/* CALCULATOR PREVIEW */}
+            {projectedNutrition && (
+                <View className="mb-6 bg-gray-900 border border-green-900/50 p-4 rounded-xl">
+                    <Text className="text-flow-green font-mono text-xs uppercase mb-2 text-center">РАСЧЕТНАЯ НОРМА (Mifflin-St Jeor)</Text>
+                    <View className="flex-row justify-between items-center mb-2">
+                        <Text className="text-white font-bold text-3xl">{projectedNutrition.targetCalories}</Text>
+                        <Text className="text-gray-400 text-xs">ККАЛ</Text>
+                    </View>
+                    <View className="flex-row gap-4">
+                        <Text className="text-gray-400 text-xs">Б: <Text className="text-white font-bold">{projectedNutrition.protein}</Text></Text>
+                        <Text className="text-gray-400 text-xs">Ж: <Text className="text-white font-bold">{projectedNutrition.fats}</Text></Text>
+                        <Text className="text-gray-400 text-xs">У: <Text className="text-white font-bold">{projectedNutrition.carbs}</Text></Text>
+                    </View>
+                </View>
+            )}
 
             {sectionTitle('БИОМЕТРИЯ')}
             <View className="flex-row gap-4 mb-2">
@@ -100,19 +151,35 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile: initialPr
             </View>
 
             {sectionTitle('ЦЕЛЬ')}
-            <View className="gap-2">
-                {(['WEIGHT_LOSS', 'MUSCLE_GAIN', 'RECOMPOSITION', 'STRENGTH', 'ENDURANCE'] as MainGoal[]).map(g => (
-                    <TouchableOpacity
-                        key={g}
-                        onPress={() => update('mainGoal', g)}
-                        className={`p-3 rounded border ${profile.mainGoal === g ? 'bg-flow-green border-flow-green' : 'bg-gray-900 border-gray-700'}`}
-                    >
-                        <Text className={`font-bold uppercase text-xs ${profile.mainGoal === g ? 'text-black' : 'text-white'}`}>
-                            {g === 'WEIGHT_LOSS' ? 'Похудение' : g === 'MUSCLE_GAIN' ? 'Набор массы' : g}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+            <View className="z-10">
+                <TouchableOpacity
+                    onPress={toggleGoalDropdown}
+                    className="flex-row justify-between items-center p-4 bg-gray-900 border border-gray-700 rounded mb-2"
+                >
+                    <Text className="text-white font-bold uppercase">{getGoalLabel(profile.mainGoal)}</Text>
+                    <Text className="text-flow-green">{isGoalOpen ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+
+                {isGoalOpen && (
+                    <View className="bg-gray-900 border border-gray-800 rounded mb-4 overflow-hidden">
+                        {(['WEIGHT_LOSS', 'CUTTING', 'MAINTENANCE', 'MUSCLE_GAIN', 'RECOMPOSITION', 'STRENGTH', 'ENDURANCE'] as MainGoal[]).filter(g => g !== profile.mainGoal).map(g => (
+                            <TouchableOpacity
+                                key={g}
+                                onPress={() => {
+                                    update('mainGoal', g);
+                                    toggleGoalDropdown();
+                                }}
+                                className="p-4 border-b border-gray-800 active:bg-gray-800"
+                            >
+                                <Text className="text-gray-300 font-bold uppercase text-xs">
+                                    {getGoalLabel(g)}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
             </View>
+
             <View className="mt-2">
                 <Text className="text-gray-600 text-[10px] mb-1">ЦЕЛЕВОЙ ВЕС (КГ)</Text>
                 <TextInput

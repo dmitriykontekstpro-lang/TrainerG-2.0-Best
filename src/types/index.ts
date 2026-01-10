@@ -86,7 +86,7 @@ export interface WorkoutSettings {
 
 export type Gender = 'MALE' | 'FEMALE';
 export type BodyFatLevel = 'LOW' | 'MEDIUM' | 'HIGH'; // <15%, 15-25%, >25%
-export type MainGoal = 'WEIGHT_LOSS' | 'MUSCLE_GAIN' | 'RECOMPOSITION' | 'STRENGTH' | 'ENDURANCE';
+export type MainGoal = 'WEIGHT_LOSS' | 'MUSCLE_GAIN' | 'RECOMPOSITION' | 'STRENGTH' | 'ENDURANCE' | 'MAINTENANCE' | 'CUTTING';
 export type ExperienceLevel = 'BEGINNER' | 'AMATEUR' | 'ADVANCED';
 export type TrainingLocation = 'GYM' | 'HOME' | 'HOME_BASIC' | 'STREET';
 export type ActivityLevel = 'SEDENTARY' | 'LIGHT' | 'MODERATE' | 'HEAVY';

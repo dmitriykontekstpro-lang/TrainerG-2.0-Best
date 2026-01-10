@@ -26,6 +26,12 @@ export const calculateNutrition = (profile: UserProfile): NutritionPlan => {
         case 'RECOMPOSITION':
             targetCalories = tdee;
             break;
+        case 'MAINTENANCE':
+            targetCalories = tdee;
+            break;
+        case 'CUTTING':
+            targetCalories = Math.round(tdee * 0.80); // Aggressive -20%
+            break;
         case 'STRENGTH':
             targetCalories = Math.round(tdee * 1.10); // +10% surplus
             break;
@@ -39,6 +45,7 @@ export const calculateNutrition = (profile: UserProfile): NutritionPlan => {
     // Loss: 40% P, 35% F, 25% C
     // Gain: 30% P, 25% F, 45% C
     // Maint: 30% P, 30% F, 40% C
+    // Cutting: 45% P, 25% F, 30% C
 
     let pRatio = 0.3;
     let fRatio = 0.3;
@@ -48,6 +55,10 @@ export const calculateNutrition = (profile: UserProfile): NutritionPlan => {
         pRatio = 0.4; fRatio = 0.35; cRatio = 0.25;
     } else if (profile.mainGoal === 'MUSCLE_GAIN') {
         pRatio = 0.3; fRatio = 0.25; cRatio = 0.45;
+    } else if (profile.mainGoal === 'CUTTING') {
+        pRatio = 0.45; fRatio = 0.25; cRatio = 0.30;
+    } else if (profile.mainGoal === 'MAINTENANCE') {
+        pRatio = 0.3; fRatio = 0.3; cRatio = 0.4;
     }
 
     const protein = Math.round((targetCalories * pRatio) / 4);

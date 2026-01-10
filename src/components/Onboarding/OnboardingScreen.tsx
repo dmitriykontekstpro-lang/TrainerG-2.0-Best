@@ -177,7 +177,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         <View className="gap-4">
             <Text className="text-white text-2xl font-bold uppercase mb-2">ЦЕЛЬ</Text>
 
-            {(['WEIGHT_LOSS', 'MUSCLE_GAIN', 'RECOMPOSITION', 'STRENGTH', 'ENDURANCE'] as MainGoal[]).map(goal => (
+            {(['WEIGHT_LOSS', 'CUTTING', 'MAINTENANCE', 'MUSCLE_GAIN', 'RECOMPOSITION', 'STRENGTH', 'ENDURANCE'] as MainGoal[]).map(goal => (
                 <TouchableOpacity
                     key={goal}
                     onPress={() => updateProfile('mainGoal', goal)}
@@ -185,9 +185,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                 >
                     <Text className={`font-bold uppercase ${profile.mainGoal === goal ? 'text-black' : 'text-white'}`}>
                         {goal === 'WEIGHT_LOSS' ? 'ПОХУДЕНИЕ' :
-                            goal === 'MUSCLE_GAIN' ? 'НАБОР МАССЫ' :
-                                goal === 'RECOMPOSITION' ? 'РЕКОМПОЗИЦИЯ' :
-                                    goal === 'STRENGTH' ? 'РАЗВИТИЕ СИЛЫ' : 'ВЫНОСЛИВОСТЬ'}
+                            goal === 'CUTTING' ? 'СУШКА' :
+                                goal === 'MAINTENANCE' ? 'ПОДДЕРЖАНИЕ' :
+                                    goal === 'MUSCLE_GAIN' ? 'НАБОР МАССЫ' :
+                                        goal === 'RECOMPOSITION' ? 'РЕКОМПОЗИЦИЯ' :
+                                            goal === 'STRENGTH' ? 'РАЗВИТИЕ СИЛЫ' : 'ВЫНОСЛИВОСТЬ'}
                     </Text>
                 </TouchableOpacity>
             ))}
