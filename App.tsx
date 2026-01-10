@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { INITIAL_SCHEDULE, INITIAL_TEMPLATES, DAYS_OF_WEEK } from './src/data';
-import { TimelineBlock, WeeklySchedule, WorkoutTemplate, WorkoutSettings, UserProfile, NutritionPlan } from './src/types';
+import { TimelineBlock, WeeklySchedule, WorkoutTemplate, WorkoutSettings, UserProfile, NutritionPlan, DailyNutritionSummary } from './src/types';
 import { prepareWorkoutTimeline } from './src/utils/progression';
 import { preGenerateTimelineAudio } from './src/utils/generator';
 import { initUserId } from './src/lib/supabaseClient';
@@ -18,6 +18,8 @@ import { TrainerModal } from './src/components/TrainerModal';
 import { FoodDiaryScreen } from './src/components/FoodDiary/FoodDiaryScreen';
 import { loadLocalHistory, HistoryState } from './src/utils/historyStore';
 import { useFonts } from 'expo-font';
+import { getLocalDateKey } from './src/utils/dateHelpers';
+import { getDailySummary } from './src/utils/foodDiaryStore';
 
 const DEFAULT_WORKOUT_SETTINGS: WorkoutSettings = {
   setsPerExercise: 3,
@@ -35,6 +37,7 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showTrainerModal, setShowTrainerModal] = useState(false);
   const [showFoodDiary, setShowFoodDiary] = useState(false);
+  const [dailySummary, setDailySummary] = useState<DailyNutritionSummary | null>(null);
 
   // App State
   const [templates, setTemplates] = useState<WorkoutTemplate[]>(INITIAL_TEMPLATES);
@@ -91,6 +94,24 @@ export default function App() {
   const todayIndex = todayDate.getDay();
   const todayTemplateId = schedule[todayIndex];
   const todayTemplate = templates.find(t => t.id === todayTemplateId);
+
+  // Load Food Data
+  const loadFoodData = async () => {
+    try {
+      const dateKey = getLocalDateKey(new Date());
+      const summary = await getDailySummary(dateKey);
+      setDailySummary(summary);
+    } catch (e) {
+      console.error('Failed to load food summary', e);
+    }
+  };
+
+  // Reload food on mount and when modal closes
+  useEffect(() => {
+    if (appReady) {
+      loadFoodData();
+    }
+  }, [appReady, showFoodDiary]);
 
   // NEW: Background Sync Logic with Local History
   useEffect(() => {
@@ -226,6 +247,8 @@ export default function App() {
           totalDuration={activeTimeline.length > 0
             ? Math.round(activeTimeline.reduce((acc, b) => acc + (b.duration || 0), 0) / 60)
             : undefined}
+          dailySummary={dailySummary}
+          userProfile={userProfile}
         />
       )}
 
