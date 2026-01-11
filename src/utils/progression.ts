@@ -70,13 +70,15 @@ export const prepareWorkoutTimeline = async (
     const blocks: TimelineBlock[] = [];
     let blockId = 0;
 
-    // 1. CHECK_IN (Body Weight Start)
+    // 1. CHECK_IN Removed per user request
+    /*
     blocks.push({
         id: `blk_${blockId++}`,
         type: BlockType.CHECK_IN,
         duration: 0,
         requiresConfirmation: true
     });
+    */
 
     // 2. PREP
     const prepDuration = (template.type === 'CUSTOM' && template.customPrepDuration)

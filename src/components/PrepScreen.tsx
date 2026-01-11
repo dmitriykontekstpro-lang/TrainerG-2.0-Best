@@ -6,9 +6,10 @@ interface PrepScreenProps {
     onReady: () => void; // Called when time is up or user skips
     onCancel: () => void;
     firstExerciseName?: string;
+    duration?: number;
 }
 
-export const PrepScreen: React.FC<PrepScreenProps> = ({ onReady, onCancel, firstExerciseName }) => {
+export const PrepScreen: React.FC<PrepScreenProps> = ({ onReady, onCancel, firstExerciseName, duration }) => {
     const [timeLeft, setTimeLeft] = useState(120);
 
     useEffect(() => {
@@ -53,9 +54,14 @@ export const PrepScreen: React.FC<PrepScreenProps> = ({ onReady, onCancel, first
                 <Text className="text-flow-green font-mono text-xs uppercase tracking-widest mb-4">
                     ПОДГОТОВКА СИСТЕМЫ
                 </Text>
-                <Text className="text-white font-sans font-bold text-3xl uppercase text-center mb-2">
+                <Text className="text-white font-sans font-bold text-3xl uppercase text-center mb-1">
                     ПРИГОТОВЬТЕСЬ
                 </Text>
+                {duration && (
+                    <Text className="text-gray-500 font-mono text-xs uppercase mb-2">
+                        ДЛИТЕЛЬНОСТЬ: {duration} МИН
+                    </Text>
+                )}
                 <Text className="text-gray-500 text-center px-8 mb-6">
                     Наденьте экипировку, включите музыку и настройтесь на работу.
                 </Text>

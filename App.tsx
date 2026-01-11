@@ -248,6 +248,11 @@ export default function App() {
     );
   }
 
+  // Calculate Duration
+  const totalDuration = activeTimeline.length > 0
+    ? Math.round(activeTimeline.reduce((acc, b) => acc + (b.duration || 0), 0) / 60)
+    : undefined;
+
   return (
     <View style={{ flex: 1, backgroundColor: 'black', paddingTop: 40 }}>
       <StatusBar style="light" />
@@ -255,7 +260,7 @@ export default function App() {
       {view === 'LOBBY' && (
         <Lobby
           todayTemplate={todayTemplate}
-          todayName={DAYS_OF_WEEK[todayIndex]}
+          todayName={DAYS_OF_WEEK[todayIndex === 0 ? 6 : todayIndex - 1]}
           onStart={startPrep}
           onOpenSettings={() => openSettings('ARSENAL')}
           onOpenProfile={() => openSettings('PROFILE')}
@@ -263,9 +268,7 @@ export default function App() {
           onOpenFoodDiary={() => setShowFoodDiary(true)}
           onOpenWorkoutDiary={() => setShowWorkoutDiary(true)}
           isSyncing={isSyncing}
-          totalDuration={activeTimeline.length > 0
-            ? Math.round(activeTimeline.reduce((acc, b) => acc + (b.duration || 0), 0) / 60)
-            : undefined}
+          totalDuration={totalDuration}
           dailySummary={dailySummary}
           userProfile={userProfile}
         />
@@ -276,6 +279,7 @@ export default function App() {
           onReady={() => setView('WORKOUT')}
           onCancel={() => setView('LOBBY')}
           firstExerciseName={activeTimeline.find(b => b.type === BlockType.WORK)?.exerciseName}
+          duration={totalDuration}
         />
       )}
 

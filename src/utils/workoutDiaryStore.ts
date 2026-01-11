@@ -93,19 +93,39 @@ export const saveWorkoutLog = async (
     rawExercises: Omit<FinishedExerciseData, 'total_executions_count'>[]
 ) => {
     try {
-        // 1. Get History for stats
-        const history = await fetchWorkoutHistory();
+        // 1. Get History
+        const allHistory = await fetchWorkoutHistory();
 
-        // 2. Calculate cumulative counts
-        const exercisesWithStats = calculateCounts(rawExercises, history);
+        // 2. Separate Past vs Today (to ensure deterministic counting & merging)
+        // We filter by date string comparison
+        const pastHistory = allHistory.filter(h => h.date !== dateKey);
+        const todayHistory = allHistory.find(h => h.date === dateKey);
+
+        // 3. Calculate cumulative counts using ONLY Past History
+        // This ensures that "re-running" today doesn't artificially inflate the count
+        const calculatedNewExercises = calculateCounts(rawExercises, pastHistory);
+
+        // 4. Merge with existing Today's exercises (if any) to preventing overwriting
+        let finalExercises = [...calculatedNewExercises];
+
+        if (todayHistory && todayHistory.exercises) {
+            // Create a Map of new exercises by ID (or Name) to override existing
+            // Using Name as the primary key for "Exercise Identity" in Diary
+            const newExercisesMap = new Map(calculatedNewExercises.map(ex => [ex.name, ex]));
+
+            const keptExercises = todayHistory.exercises.filter(ex => !newExercisesMap.has(ex.name));
+
+            // Combine: Kept Old + New Overwrites
+            finalExercises = [...keptExercises, ...calculatedNewExercises];
+        }
 
         const newTrainData: DayTrainData = {
             date: dateKey,
-            exercises: exercisesWithStats,
-            exercises_count: exercisesWithStats.length
+            exercises: finalExercises,
+            exercises_count: finalExercises.length
         };
 
-        // 3. Get existing row to preserve 'day_json' (food)
+        // 5. Get existing row to preserve 'day_json' (food)
         const { data: existingRow, error: fetchError } = await supabase
             .from(TABLE_NAME)
             .select('*')
@@ -116,19 +136,17 @@ export const saveWorkoutLog = async (
         let upsertPayload: any = {
             user_id: SHARED_USER_ID,
             date: dateKey,
-            day_train: newTrainData,
+            day_train: newTrainData, // Saving the Merged Data
             updated_at: new Date().toISOString()
         };
 
         if (existingRow && existingRow.day_json) {
-            // Preserve existing food data
             upsertPayload.day_json = existingRow.day_json;
         } else {
-            // If no row exists or day_json is null, initialize as empty array to ensure correct format
             upsertPayload.day_json = [];
         }
 
-        // 4. Write to DB
+        // 6. Write to DB
         const { error: saveError } = await supabase
             .from(TABLE_NAME)
             .upsert(upsertPayload, { onConflict: 'user_id, date' });
@@ -138,7 +156,7 @@ export const saveWorkoutLog = async (
             throw saveError;
         }
 
-        console.log('[WorkoutStore] Workout saved successfully.');
+        console.log('[WorkoutStore] Workout saved successfully (Merged).');
         return newTrainData;
 
     } catch (e) {

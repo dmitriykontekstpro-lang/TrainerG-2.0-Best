@@ -110,7 +110,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                                 {todayTemplate.name}
                             </Text>
                             <Text className="text-gray-500 text-xs font-mono">
-                                {todayTemplate.exercises.length} УПР • ~{totalDuration || 45} МИН
+                                {todayTemplate.exercises.length} УПР • {totalDuration || '--'} МИН
                             </Text>
                         </View>
                     ) : (

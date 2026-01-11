@@ -228,4 +228,4 @@ export const INITIAL_SCHEDULE: WeeklySchedule = {
     0: null, 2: null, 4: null, 6: null
 };
 
-export const DAYS_OF_WEEK = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+export const DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
