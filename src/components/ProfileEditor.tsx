@@ -37,6 +37,9 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile: initialPr
     const [isActivityOpen, setIsActivityOpen] = useState(false);
     const [projectedNutrition, setProjectedNutrition] = useState<NutritionPlan | null>(null);
 
+    // Local string state for weight input to handle dots/commas
+    const [weightStr, setWeightStr] = useState(String(initialProfile?.weight || ''));
+
     // Initial Load: Get actual weight from Supabase History
     useEffect(() => {
         const loadWeight = async () => {
@@ -44,6 +47,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile: initialPr
             if (w) {
                 console.log('Loaded weight from Supabase history:', w);
                 setProfile(p => ({ ...p, weight: w }));
+                setWeightStr(String(w));
             }
         };
         loadWeight();
@@ -80,7 +84,6 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile: initialPr
                 await saveUserWeight(profile.weight, new Date());
             } catch (e) {
                 console.error('Weight save failed', e);
-                // Don't block UI, proceed to save profile
             }
         }
 
@@ -212,11 +215,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile: initialPr
                 <View className="flex-1">
                     <Text className="text-gray-600 text-[10px] mb-1">ВЕС (КГ)</Text>
                     <TextInput
-                        keyboardType="numeric"
-                        value={String(profile.weight || '')}
+                        keyboardType="decimal-pad"
+                        value={weightStr}
                         onChangeText={t => {
-                            // Support float input (e.g. 80.5)
-                            const val = parseFloat(t);
+                            setWeightStr(t);
+                            const val = parseFloat(t.replace(',', '.'));
                             update('weight', isNaN(val) ? 0 : val);
                         }}
                         className="bg-gray-900 text-white p-3 rounded border border-gray-700"
