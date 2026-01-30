@@ -170,62 +170,67 @@ export const EXERCISE_DB: Record<MuscleGroup, Exercise[]> = {
 };
 
 // Initial Mock State
+// Updated to User's PUSH / PULL / LEGS Split
 export const INITIAL_TEMPLATES: WorkoutTemplate[] = [
     {
-        id: 'tpl_a',
-        name: 'ГРУДЬ + ПРЕСС',
+        id: 'tpl_push',
+        name: 'PUSH: ГРУДЬ+ПЛЕЧИ+ТРИЦЕПС',
         primaryGroup: MuscleGroup.CHEST,
-        secondaryGroup: MuscleGroup.ABS,
+        secondaryGroup: MuscleGroup.SHOULDERS,
+        type: 'PROGRESSIVE',
         exercises: [
-            EXERCISE_DB[MuscleGroup.CHEST].find(e => e.id === 'ch_1')!,  // Жим штанги лежа
-            EXERCISE_DB[MuscleGroup.CHEST].find(e => e.id === 'ch_2')!,  // Жим гантелей на наклонной
-            EXERCISE_DB[MuscleGroup.CHEST].find(e => e.id === 'ch_12')!, // Бабочка
-            EXERCISE_DB[MuscleGroup.CHEST].find(e => e.id === 'ch_4')!,  // Отжимания на брусьях
-            EXERCISE_DB[MuscleGroup.ABS].find(e => e.id === 'abs_6')!,    // Боковые наклоны
-            EXERCISE_DB[MuscleGroup.ABS].find(e => e.id === 'abs_9')!,    // Подъем ног на скамье
-            EXERCISE_DB[MuscleGroup.ABS].find(e => e.id === 'abs_10')!,   // Скручивания на наклонной
-            EXERCISE_DB[MuscleGroup.ABS].find(e => e.id === 'abs_12')!,   // Подъем ног в упоре
+            EXERCISE_DB[MuscleGroup.CHEST].find(e => e.id === 'ch_1')!,  // Жим штанги лежа (4x6-8)
+            EXERCISE_DB[MuscleGroup.CHEST].find(e => e.id === 'ch_2')!,  // Жим гантелей на наклонной (3-4x8-10)
+            EXERCISE_DB[MuscleGroup.SHOULDERS].find(e => e.id === 'sh_1')!, // Армейский жим (3-4x8-10)
+            EXERCISE_DB[MuscleGroup.CHEST].find(e => e.id === 'ch_12')!, // Бабочка (3x12-15)
+            EXERCISE_DB[MuscleGroup.SHOULDERS].find(e => e.id === 'sh_3')!, // Махи гантелями (3-4x12-15)
+            EXERCISE_DB[MuscleGroup.TRICEPS].find(e => e.id === 'tri_2')!,  // Французский жим (3-4x10-12)
+            EXERCISE_DB[MuscleGroup.ABS].find(e => e.id === 'abs_19')!,     // Скручивания на блоке (3-4x15-20)
         ]
     },
     {
-        id: 'tpl_b',
-        name: 'СПИНА + БИЦЕПС',
+        id: 'tpl_legs',
+        name: 'LEGS: НОГИ+ПРЕСС',
+        primaryGroup: MuscleGroup.LEGS,
+        secondaryGroup: MuscleGroup.ABS,
+        type: 'PROGRESSIVE',
+        exercises: [
+            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_1')!,   // Приседания со штангой (4x6-8)
+            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_11')!,  // Жим ногами (3-4x10-12)
+            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_2')!,   // Румынская тяга (4x8-10)
+            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_12')!,  // Разгибание ног (3x12-15)
+            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_13')!,  // Сгибание ног лежа (3x12-15)
+            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_8')!,   // Подъем на носки стоя (4x15-20)
+            EXERCISE_DB[MuscleGroup.ABS].find(e => e.id === 'abs_4')!,    // Планка (3xMax)
+        ]
+    },
+    {
+        id: 'tpl_pull',
+        name: 'PULL: СПИНА+БИЦЕПС',
         primaryGroup: MuscleGroup.BACK,
         secondaryGroup: MuscleGroup.BICEPS,
+        type: 'PROGRESSIVE',
         exercises: [
-            EXERCISE_DB[MuscleGroup.BACK].find(e => e.id === 'bk_2')!,   // Подтягивания широким
-            EXERCISE_DB[MuscleGroup.BACK].find(e => e.id === 'bk_3')!,   // Тяга штанги в наклоне
-            EXERCISE_DB[MuscleGroup.BACK].find(e => e.id === 'bk_12')!,  // Тяга нижнего блока
-            EXERCISE_DB[MuscleGroup.BACK].find(e => e.id === 'bk_16')!,  // Тяга в. блока обратным
-            EXERCISE_DB[MuscleGroup.BACK].find(e => e.id === 'bk_18')!,  // Гиперэкстензия
-            EXERCISE_DB[MuscleGroup.BICEPS].find(e => e.id === 'bi_1')!, // Подъем штанги на бицепс
-            EXERCISE_DB[MuscleGroup.BICEPS].find(e => e.id === 'bi_3')!, // Молотки
-            EXERCISE_DB[MuscleGroup.ABS].find(e => e.id === 'abs_2')!,   // Подъем ног в висе
-        ]
-    },
-    {
-        id: 'tpl_c',
-        name: 'НОГИ + ПЛЕЧИ',
-        primaryGroup: MuscleGroup.LEGS,
-        secondaryGroup: MuscleGroup.SHOULDERS,
-        exercises: [
-            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_1')!,   // Приседания со штангой
-            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_11')!,  // Жим ногами
-            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_2')!,   // Румынская тяга
-            EXERCISE_DB[MuscleGroup.LEGS].find(e => e.id === 'lg_12')!,  // Разгибание ног
-            EXERCISE_DB[MuscleGroup.SHOULDERS].find(e => e.id === 'sh_2')!, // Жим гантелей сидя
-            EXERCISE_DB[MuscleGroup.SHOULDERS].find(e => e.id === 'sh_3')!, // Махи в стороны
-            EXERCISE_DB[MuscleGroup.SHOULDERS].find(e => e.id === 'sh_13')!, // Лицевая тяга
-            EXERCISE_DB[MuscleGroup.ABS].find(e => e.id === 'abs_4')!,    // Планка
+            EXERCISE_DB[MuscleGroup.BACK].find(e => e.id === 'bk_1')!,   // Становая тяга (3-4x6-8)
+            EXERCISE_DB[MuscleGroup.BACK].find(e => e.id === 'bk_11')!,  // Тяга верхнего блока (3-4x10-12)
+            EXERCISE_DB[MuscleGroup.BACK].find(e => e.id === 'bk_3')!,   // Тяга штанги в наклоне (3-4x8-10)
+            EXERCISE_DB[MuscleGroup.BACK].find(e => e.id === 'bk_12')!,  // Тяга нижнего блока (3x10-12)
+            EXERCISE_DB[MuscleGroup.BICEPS].find(e => e.id === 'bi_1')!, // Подъем штанги на бицепс (3x8-12)
+            EXERCISE_DB[MuscleGroup.BICEPS].find(e => e.id === 'bi_3')!, // Молотки (3x10-12)
+            EXERCISE_DB[MuscleGroup.BICEPS].find(e => e.id === 'bi_6')!, // Бицепс сидя на наклонной (3x12)
+            EXERCISE_DB[MuscleGroup.ABS].find(e => e.id === 'abs_2')!,   // Подъем ног в висе (3-4x10-15)
         ]
     }
 ];
 
 export const INITIAL_SCHEDULE: WeeklySchedule = {
-    1: 'tpl_a', // Monday
-    3: 'tpl_b', // Wednesday
-    5: 'tpl_c', // Friday
-    0: null, 2: null, 4: null, 6: null
+    1: null,        // Monday (Rest)
+    2: 'tpl_push',  // Tuesday
+    3: null,        // Wednesday
+    4: null,        // Thursday
+    5: 'tpl_legs',  // Friday
+    6: 'tpl_pull',  // Saturday
+    0: null         // Sunday
 };
 
 export const DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
