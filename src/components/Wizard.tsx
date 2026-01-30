@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput } from 'react-native';
-import { MuscleGroup, WorkoutTemplate, WorkoutType, CustomExerciseSettings } from '../types';
+import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { MuscleGroup, WorkoutTemplate, WorkoutType, CustomExerciseSettings, Exercise } from '../types';
 import { COLORS, EXERCISE_DB } from '../data';
+import { loadCustomExercises, saveCustomExercise, getCombinedExerciseDB } from '../utils/customExercises';
 
 interface WizardProps {
     onClose: () => void;
@@ -19,6 +20,16 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
     const [secondary, setSecondary] = useState<MuscleGroup | null>(null);
     const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
 
+    // Data Base State
+    const [fullDB, setFullDB] = useState<Record<MuscleGroup, Exercise[]>>(EXERCISE_DB);
+    const [showAllGroups, setShowAllGroups] = useState(false);
+
+    // Custom Exercise Creation Modal
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [newExName, setNewExName] = useState('');
+    const [newExGroup, setNewExGroup] = useState<MuscleGroup>(MuscleGroup.CHEST);
+    const [creatingEx, setCreatingEx] = useState(false);
+
     // Custom Logic
     const [customName, setCustomName] = useState('');
     const [customConfig, setCustomConfig] = useState<Record<string, CustomExerciseSettings>>({});
@@ -27,6 +38,17 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
     const [customRestSets, setCustomRestSets] = useState(30);
     const [customRestEx, setCustomRestEx] = useState(120);
     const [customPrep, setCustomPrep] = useState(30);
+
+    // Load custom exercises on mount
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        const custom = await loadCustomExercises();
+        const combined = getCombinedExerciseDB(custom);
+        setFullDB(combined);
+    };
 
     // Load initial state if editing
     useEffect(() => {
@@ -65,7 +87,7 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
         setStep(3);
     };
 
-    const toggleExercise = (id: string, group: MuscleGroup) => {
+    const toggleExercise = (id: string) => {
         setSelectedExerciseIds(prev => {
             const isSelected = prev.includes(id);
 
@@ -75,8 +97,11 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
                 setCustomConfig(newConfig);
                 return prev.filter(x => x !== id);
             } else {
-                const limit = workoutType === 'CUSTOM' ? 8 : 10;
-                if (prev.length >= limit) return prev;
+                const limit = workoutType === 'CUSTOM' ? 12 : 12; // Increased limit
+                if (prev.length >= limit) {
+                    Alert.alert("Лимит упражнений", `Максимум ${limit} упражнений.`);
+                    return prev;
+                }
 
                 if (workoutType === 'CUSTOM') {
                     setCustomConfig(prevConf => ({
@@ -99,10 +124,9 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
     const handleSave = () => {
         if (!primary || !secondary) return;
 
-        const primaryPool = EXERCISE_DB[primary] || [];
-        const secondaryPool = secondary !== MuscleGroup.NONE ? (EXERCISE_DB[secondary] || []) : [];
-        const allPool = [...primaryPool, ...secondaryPool];
-        const finalExercises = allPool.filter(ex => selectedExerciseIds.includes(ex.id));
+        // Flatten all available exercises to find selected ones
+        const allAvailable = Object.values(fullDB).flat();
+        const finalExercises = allAvailable.filter(ex => selectedExerciseIds.includes(ex.id));
 
         const name = workoutType === 'CUSTOM'
             ? (customName.trim() || 'Custom Workout').substring(0, 20)
@@ -125,8 +149,44 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
         onClose();
     };
 
+    const handleCreateCustomExercise = async () => {
+        if (!newExName.trim()) {
+            Alert.alert("Ошибка", "Введите название упражнения");
+            return;
+        }
+
+        setCreatingEx(true);
+        const newId = `cust_${Date.now()}`;
+        const newExercise: Exercise = {
+            id: newId,
+            name: newExName.trim(),
+            group: newExGroup,
+            defaultReps: 10,
+            defaultWeight: 20
+        };
+
+        await saveCustomExercise(newExercise);
+        await loadData(); // Reload DB
+
+        // Auto-select
+        setSelectedExerciseIds(prev => [...prev, newId]);
+        if (workoutType === 'CUSTOM') {
+            setCustomConfig(prev => ({
+                ...prev,
+                [newId]: { sets: 3, reps: 10, weight: 20 }
+            }));
+        }
+
+        setCreatingEx(false);
+        setShowCreateModal(false);
+        setNewExName('');
+    };
+
+    const sGroups = [MuscleGroup.CHEST, MuscleGroup.BACK, MuscleGroup.LEGS, MuscleGroup.SHOULDERS, MuscleGroup.BICEPS, MuscleGroup.TRICEPS, MuscleGroup.ABS];
+
     const renderExerciseList = (group: MuscleGroup, labelColor: string) => {
-        const exercises = EXERCISE_DB[group] || [];
+        const exercises = fullDB[group] || [];
+        if (exercises.length === 0) return null;
 
         return (
             <View className="mb-6" key={group}>
@@ -134,15 +194,19 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
                 <View className="space-y-2">
                     {exercises.map(ex => {
                         const isSelected = selectedExerciseIds.includes(ex.id);
+                        const isCustom = ex.id.startsWith('cust_');
                         return (
                             <TouchableOpacity
                                 key={ex.id}
-                                onPress={() => toggleExercise(ex.id, group)}
+                                onPress={() => toggleExercise(ex.id)}
                                 className={`w-full p-3 rounded border flex-row justify-between items-center 
                                 ${isSelected ? 'bg-gray-800 border-flow-green' : 'border-gray-800'}
                               `}
                             >
-                                <Text className={`font-sans text-sm ${isSelected ? 'text-white' : 'text-gray-400'}`}>{ex.name}</Text>
+                                <View className="flex-1">
+                                    <Text className={`font-sans text-sm ${isSelected ? 'text-white' : 'text-gray-400'}`}>{ex.name}</Text>
+                                    {isCustom && <Text className="text-[10px] text-flow-blue uppercase">Своё</Text>}
+                                </View>
                                 {isSelected && <Text className="text-flow-green font-bold text-xs">✓</Text>}
                             </TouchableOpacity>
                         );
@@ -153,9 +217,8 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
     };
 
     const renderConfigStep = () => {
-        const primaryPool = EXERCISE_DB[primary!] || [];
-        const secondaryPool = secondary !== MuscleGroup.NONE ? (EXERCISE_DB[secondary!] || []) : [];
-        const allExercises = [...primaryPool, ...secondaryPool].filter(e => selectedExerciseIds.includes(e.id));
+        const allAvailable = Object.values(fullDB).flat();
+        const allExercises = allAvailable.filter(e => selectedExerciseIds.includes(e.id));
 
         return (
             <ScrollView className="flex-1 p-6">
@@ -258,7 +321,7 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
     return (
         <Modal animationType="slide" transparent={true} visible={true} onRequestClose={onClose}>
             <View className="flex-1 justify-end bg-black/90">
-                <View className="h-[90%] bg-[#111827] rounded-t-3xl flex-col overflow-hidden border-t border-gray-800">
+                <View className="h-[95%] bg-[#111827] rounded-t-3xl flex-col overflow-hidden border-t border-gray-800 relative">
 
                     {/* Header */}
                     <View className="p-6 border-b border-gray-800 flex-row justify-between items-center bg-[#111827]">
@@ -286,7 +349,7 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
                                 className="bg-gray-900 p-8 rounded-xl border border-flow-blue items-center"
                             >
                                 <Text className="text-flow-blue text-2xl font-bold uppercase mb-2">КАСТОМНАЯ</Text>
-                                <Text className="text-gray-400 text-center">Полный контроль настроек. До 8 упражнений. Без истории.</Text>
+                                <Text className="text-gray-400 text-center">Полный контроль настроек. Больше упражнений. Без истории.</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -314,11 +377,45 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
 
                     {/* Step 3: Exercise Selection */}
                     {step === 3 && primary && secondary && (
-                        <ScrollView className="flex-1 p-6">
-                            {renderExerciseList(primary, COLORS.GREEN)}
-                            {secondary !== MuscleGroup.NONE && renderExerciseList(secondary, COLORS.BLUE)}
-                            <Text className="text-center text-gray-500 text-xs font-mono mt-4">ВЫБРАНО: {selectedExerciseIds.length}</Text>
-                        </ScrollView>
+                        <View className="flex-1">
+                            <ScrollView className="flex-1 p-6" contentContainerStyle={{ paddingBottom: 100 }}>
+
+                                {/* Header Actions */}
+                                <TouchableOpacity
+                                    onPress={() => setShowCreateModal(true)}
+                                    className="mb-6 bg-gray-800 p-3 rounded border border-gray-600 border-dashed items-center flex-row justify-center gap-2"
+                                >
+                                    <Text className="text-flow-green text-xl font-bold">+</Text>
+                                    <Text className="text-gray-300 font-bold uppercase text-xs">Создать своё упражнение</Text>
+                                </TouchableOpacity>
+
+                                {/* Primary & Secondary */}
+                                {renderExerciseList(primary, COLORS.GREEN)}
+                                {secondary !== MuscleGroup.NONE && renderExerciseList(secondary, COLORS.BLUE)}
+
+                                {/* Show All Toggle */}
+                                <TouchableOpacity
+                                    onPress={() => setShowAllGroups(!showAllGroups)}
+                                    className="my-6 p-4 rounded items-center bg-gray-900 border border-gray-700"
+                                >
+                                    <Text className="text-white text-xs uppercase font-bold tracking-widest">
+                                        {showAllGroups ? '▲ СКРЫТЬ ОСТАЛЬНЫЕ' : '▼ ПОКАЗАТЬ ВСЕ ГРУППЫ'}
+                                    </Text>
+                                </TouchableOpacity>
+
+                                {/* All Other Groups */}
+                                {showAllGroups && (
+                                    <View>
+                                        {sGroups.map(g => {
+                                            if (g === primary || g === secondary) return null;
+                                            return renderExerciseList(g, '#666');
+                                        })}
+                                    </View>
+                                )}
+
+                                <Text className="text-center text-gray-500 text-xs font-mono mt-4">ВЫБРАНО: {selectedExerciseIds.length}</Text>
+                            </ScrollView>
+                        </View>
                     )}
 
                     {/* Step 4: Config (Custom Only) */}
@@ -346,6 +443,54 @@ export const Wizard: React.FC<WizardProps> = ({ onClose, onSave, slotId, initial
                             )}
                         </View>
                     )}
+
+                    {/* Modal for Creating Exercise */}
+                    <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
+                        <View className="flex-1 justify-center bg-black/80 p-6">
+                            <View className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+                                <Text className="text-white font-bold text-lg mb-4 uppercase">Новое упражнение</Text>
+
+                                <Text className="text-gray-500 text-xs mb-1">НАЗВАНИЕ</Text>
+                                <TextInput
+                                    value={newExName}
+                                    onChangeText={setNewExName}
+                                    placeholder="Например: Прыжки на скакалке"
+                                    placeholderTextColor="#555"
+                                    className="bg-black text-white p-3 rounded border border-gray-700 mb-4"
+                                    autoFocus
+                                />
+
+                                <Text className="text-gray-500 text-xs mb-1">ГРУППА МЫШЦ</Text>
+                                <View className="flex-row flex-wrap gap-2 mb-6">
+                                    {sGroups.map(g => (
+                                        <TouchableOpacity
+                                            key={g}
+                                            onPress={() => setNewExGroup(g)}
+                                            className={`px-3 py-2 rounded border ${newExGroup === g ? 'bg-flow-green border-flow-green' : 'bg-black border-gray-700'}`}
+                                        >
+                                            <Text className={`text-xs ${newExGroup === g ? 'text-black font-bold' : 'text-gray-400'}`}>{g}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <View className="flex-row gap-3">
+                                    <TouchableOpacity
+                                        onPress={() => setShowCreateModal(false)}
+                                        className="flex-1 bg-gray-800 p-3 rounded items-center"
+                                    >
+                                        <Text className="text-white font-bold">ОТМЕНА</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={handleCreateCustomExercise}
+                                        disabled={creatingEx}
+                                        className="flex-1 bg-flow-green p-3 rounded items-center"
+                                    >
+                                        {creatingEx ? <ActivityIndicator color="black" /> : <Text className="text-black font-bold">СОЗДАТЬ</Text>}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
 
                 </View>
             </View>
